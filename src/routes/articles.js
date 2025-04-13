@@ -6,19 +6,66 @@ const router = express.Router();
 // 获取所有文章的 API
 router.get('/api/knowledge', async (req, res) => {
   try {
-    const articles = await Article.find().populate('children');
+    const articles = await Article.find();
     res.json(articles);
   } catch (err) {
     res.status(500).json({ message: '获取数据失败', error: err });
   }
 });
 
+// 获取特定文章
+router.get('/api/knowledge/article/:id', async (req, res) => {
+  const articleId = req.params.id;  // 从 URL 中获取 id
+
+  try {
+    // 获取所有树
+    const knowledgeTrees = await Article.find();  // 假设每颗树作为一个文档存储在 Article 集合中
+
+    // 递归查找目标文章
+    const findArticleById = (node, targetId) => {
+      if (node.index === targetId) {
+        return node;  // 找到目标节点，返回
+      }
+
+      // 如果节点有子节点，则继续递归查找
+      if (node.children) {
+        for (const child of node.children) {
+          const found = findArticleById(child, targetId);
+          if (found) {
+            return found;  // 如果找到，返回结果
+          }
+        }
+      }
+
+      return null;  // 如果没有找到，返回 null
+    };
+
+    // 遍历每颗树，递归查找目标文章
+    let article = null;
+    for (const tree of knowledgeTrees) {
+      article = findArticleById(tree, articleId);
+      if (article) {
+        break;  // 找到目标文章后就跳出循环
+      }
+    }
+
+    if (!article) {
+      return res.status(404).send('Article not found');
+    }
+    res.json(article);  // 返回文章内容
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Server error');
+  }
+});
+
 // 递归处理文章及其子项
 const saveArticleWithChildren = async (articleData) => {
-  const { title, content, children } = articleData;
+  const { title, content, children, index } = articleData;
 
   // 创建新的文章
   const newArticle = new Article({
+    index,
     title,
     content,
     children: [], // 初始化子文章数组
