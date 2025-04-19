@@ -1,25 +1,18 @@
+// index.js
 const express = require('express');
-const bodyParser = require('body-parser');
-const connectDB = require('./config/db');
-const articleRoutes = require('./routes/articles');
 const cors = require('cors');
+require('dotenv').config();
 
 const app = express();
 
-// 启用 CORS 支持
+// // 启用 CORS 支持
 app.use(cors());
+app.use(express.json());
 
-// 连接数据库
-connectDB();
+const authRoutes = require('./routes/auth');
+app.use('/api/auth', authRoutes);
 
-// 中间件：解析请求体中的 JSON 数据
-app.use(bodyParser.json());
-
-// 使用路由
-app.use(articleRoutes);
-
-// 启动服务器
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server running at http://localhost:${PORT}`);
 });

@@ -1,14 +1,9 @@
 // config/db.js
-const mongoose = require('mongoose');
+const { Pool } = require('pg');
+require('dotenv').config();
 
-const connectDB = async () => {
-  try {
-    await mongoose.connect('mongodb://localhost:27017/articleList');
-    console.log('MongoDB connected successfully!');
-  } catch (err) {
-    console.error('Error connecting to MongoDB:', err);
-    process.exit(1);  // 连接失败时退出程序
-  }
-};
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
 
-module.exports = connectDB;
+module.exports = pool;
