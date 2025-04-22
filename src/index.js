@@ -10,7 +10,9 @@ app.use(cors());
 app.use(express.json());
 
 const authRoutes = require('./routes/auth');
+const challengesRoutes = require('./routes/challenges');
 app.use('/api/auth', authRoutes);
+app.use('/api/challenges', challengesRoutes)
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {

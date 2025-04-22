@@ -38,6 +38,12 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: '用户名已被注册' });
     }
 
+    // 检查邮箱是否已存在
+    const emailCheck = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    if (emailCheck.rows.length > 0) {
+      return res.status(400).json({ error: '邮箱已被注册' });
+    }
+
     // 哈希密码
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
