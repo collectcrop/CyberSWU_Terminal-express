@@ -17,11 +17,11 @@ router.post('/login', async (req, res) => {
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(401).json({ error: '用户或密码错误' });
 
-    const token = jwt.sign({ id: user.id, username: user.username ,role: user.role}, process.env.JWT_SECRET, {
+    const token = jwt.sign({ id: user.id, username: user.username ,role: user.role, email: user.email }, process.env.JWT_SECRET, {
       expiresIn: '2h',
     });
 
-    res.json({ message: '登录成功', token , user: { id: user.id, username: user.username }});
+    res.json({ message: '登录成功', token , user: { id: user.id, username: user.username, email: user.email }});
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: '服务器错误' });

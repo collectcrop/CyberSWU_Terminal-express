@@ -11,8 +11,10 @@ app.use(express.json());
 
 const authRoutes = require('./routes/auth');
 const challengesRoutes = require('./routes/challenges');
+const userRoutes = require('./routes/user');
 app.use('/api/auth', authRoutes);
 app.use('/api/challenges', challengesRoutes)
+app.use('/api/user', userRoutes)
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {

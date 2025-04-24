@@ -25,7 +25,8 @@ CREATE TABLE challenges (
     dockerfile_path TEXT,         -- Dockerfile 所在路径
     author_id INTEGER REFERENCES users(id)         -- 出题者，外键关联 users 表
     ON DELETE SET NULL,                          -- 删除用户时，保留题目信息
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP，
+    solved_count INTEGER DEFAULT 0,
 );
 
 CREATE TABLE solves (
@@ -47,13 +48,41 @@ CREATE TABLE subcategories (
     category_id INTEGER REFERENCES categories(id) ON DELETE CASCADE
 );
 
+CREATE TABLE flags (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  challenge_id INTEGER NOT NULL REFERENCES challenges(id) ON DELETE CASCADE,
+  flag TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+CREATE UNIQUE INDEX unique_dynamic_flag_per_user
+ON flags (challenge_id, user_id)
+WHERE is_dynamic = true;
+
+CREATE INDEX idx_flags_user ON flags(user_id);
+CREATE INDEX idx_flags_challenge ON flags(challenge_id);
+
+CREATE TABLE solves (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  challenge_id INTEGER NOT NULL REFERENCES challenges(id),
+  solved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, challenge_id) -- 保证一个人解一个题只记一次
+);
+
+
+
+
+
 INSERT INTO tags (name) VALUES ('crypto');
 INSERT INTO tags (name) VALUES ('pwn');
 INSERT INTO tags (name) VALUES ('web');
 INSERT INTO tags (name) VALUES ('reverse');
 INSERT INTO tags (name) VALUES ('misc');
+INSERT INTO tags (name) VALUES ('ai');
 
-INSERT INTO categories (name) VALUES  ('crypto'), ('pwn'), ('web'),('reverse'),('misc');
+INSERT INTO categories (name) VALUES  ('crypto'), ('pwn'), ('web'),('reverse'),('misc'),('ai');
 INSERT INTO subcategories (name, category_id) VALUES
   ('ret2libc', 2),
   ('ret2syscall', 2),
