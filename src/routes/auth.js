@@ -6,6 +6,23 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
+const SECRET = process.env.JWT_SECRET
+
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // "Bearer xxx",&&短路求值避免undefine情况
+  console.log("check token: "+token)
+  if (!token) return res.status(401).json({ error: 'Token missing' });
+
+  jwt.verify(token, SECRET, (err, user) => {
+    if (err) {
+      console.error('Token verify failed:', err.name, err.message);
+      return res.status(403).json({ error: 'Invalid token' });
+    }
+    req.user = user; // 把解码后的 user 对象挂到 req 上
+    next();
+  });
+};
 
 router.post('/login', async (req, res) => {
   const { username, password } = req.body;
@@ -17,7 +34,7 @@ router.post('/login', async (req, res) => {
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(401).json({ error: '用户或密码错误' });
 
-    const token = jwt.sign({ id: user.id, username: user.username ,role: user.role, email: user.email }, process.env.JWT_SECRET, {
+    const token = jwt.sign({ id: user.id, username: user.username , email: user.email }, SECRET, {
       expiresIn: '2h',
     });
 
@@ -159,5 +176,49 @@ router.get('/validate-reset-token/:token', async (req, res) => {    // 验证重
   }
 });
 
+// router.get("/check-admin/:token", async (req, res) => {    // 检查是否为管理员
+//   console.log("check-admin");
+//   const { token } = req.params;
+//   if (token) {
+//     try {
+//       const userId = JSON.parse(atob(token.split('.')[1])).id;
+//       const result = await pool.query('SELECT role FROM users WHERE id = $1', [userId]);
+//       const role = result.rows[0].role;
+//       if (role === 'admin') {
+//         res.json({ isAdmin: true });
+//       } else {
+//         res.json({ isAdmin: false });
+//       }
+//       return;
+//     } catch (e) {
+//       console.error("Token 解码失败", e);
+//     }
+//   }
+//   else{
+//     res.json({ error: "no token offered" });
+//   }
+// }
+// )
 
+router.get("/check-admin", authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id; // 从 token 中间件获取
+    console.log(userId)
+    const result = await pool.query('SELECT role FROM users WHERE id = $1', [userId]);
+    const role = result.rows[0]?.role;
+
+    res.json({ isAdmin: role === 'admin' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.get('/check-token', authenticateToken, (req, res) => {
+  // 如果 token 有效，authenticateToken 会调用 next() 到这里
+  res.json({
+    message: 'Token 有效',
+    user: req.user,  // 包含 id、username、email 等
+  });
+});
 module.exports = router;

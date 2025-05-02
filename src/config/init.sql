@@ -3,8 +3,10 @@
 CREATE TABLE tags (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
+    order INTEGER DEFAULT 0,    -- 前端渲染显示顺序
     parent_id INTEGER REFERENCES tags(id) ON DELETE SET NULL  -- 支持多级分类，可选
 );
+UPDATE tags SET "order" = id;
 
 CREATE TABLE challenge_tags (
     challenge_id INTEGER REFERENCES challenges(id) ON DELETE CASCADE,
@@ -25,7 +27,7 @@ CREATE TABLE challenges (
     dockerfile_path TEXT,         -- Dockerfile 所在路径
     author_id INTEGER REFERENCES users(id)         -- 出题者，外键关联 users 表
     ON DELETE SET NULL,                          -- 删除用户时，保留题目信息
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP，
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     solved_count INTEGER DEFAULT 0,
 );
 
@@ -40,7 +42,9 @@ CREATE TABLE solves (
 CREATE TABLE categories (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL
+    order INTEGER DEFAULT 0,    -- 前端渲染显示顺序
 );
+UPDATE categories SET "order" = id;
 
 CREATE TABLE subcategories (
     id SERIAL PRIMARY KEY,

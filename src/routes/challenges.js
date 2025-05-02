@@ -3,6 +3,42 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/db');
 
+// 添加 challenge
+router.post('/add', async (req, res) => {
+  console.log(req.body)
+  const { title, description, category_id, subcategory_id, flag, flagType, score, author_id,
+    attachment_url, attachment_name, difficulty
+   } = req.body;
+  try{
+    const client = await pool.connect();        // 必须题目更新和flag表更新同时完成
+    try {
+      await client.query('BEGIN');
+      const challengeInsertResult = await client.query(
+        `INSERT INTO challenges (title, description, category_id, subcategory_id, score, author_id,
+         attachment_url, attachment_name, difficulty)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        RETURNING id
+        `,[title, description, category_id, subcategory_id, score, author_id, attachment_url, attachment_name, difficulty])
+      
+      const challengeId = challengeInsertResult.rows[0].id;
+
+      await client.query(     // 插入 flag
+        `INSERT INTO flags (flag, challenge_id, is_dynamic)
+        VALUES ($1, $2, $3)
+        `,[flag, challengeId, flagType==="dynamic"])
+
+      await client.query('COMMIT');           // 提交事务
+      res.status(200).json({ success: true });
+    }catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    }
+    
+    
+  }catch{
+    res.status(500).json({ error: '服务器内部错误'});
+  }
+})
 // 提交 flag 进行验证
 router.post('/validate-flag', async (req, res) => {
   const { challengeId, content, userId } = req.body; // 获取请求中的 challengeId 和 flag
@@ -64,7 +100,7 @@ async function recordSolve(userId, challengeId) {
       VALUES ($1, $2)
       ON CONFLICT DO NOTHING;
     `, [userId, challengeId]);
-
+      
     // 只有第一次插入成功时才更新 solved_count
     if (insertRes.rowCount > 0){
       await pool.query(`
@@ -116,7 +152,6 @@ router.get('/by-category/:id', async (req, res) => {
 // 获取某个具体 challenge 的信息
 router.get('/:id', async (req, res) => {
   const challengeId = req.params.id;
-
   try {
     const result = await pool.query(
       `SELECT *
