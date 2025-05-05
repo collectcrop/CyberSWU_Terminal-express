@@ -1,0 +1,3 @@
+globalThis.env = {DATABASE_URL: 'postgres://collectcrop:Psf19820115@localhost:5432/ctf_platform', JWT_SECRET: 'my_super_secret_jwt_key', DOCKERFILE_PATH: '/Dockerfile'}
+
+export {}
